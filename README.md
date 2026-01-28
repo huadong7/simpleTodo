@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # SimpleTodo for HyperOS
 
 ## Project Setup
@@ -27,3 +28,7 @@ This is a simplified Android project structure.
 
 ### Note on HyperOS
 On HyperOS (Android 14/15), you may need to manually allow "Autostart" for the app in system settings if background alarms are unreliable, although `SCHEDULE_EXACT_ALARM` usually bypasses battery optimization for the alarm delivery.
+=======
+# simpleTodo
+simpleTodo
+>>>>>>> 1705846e948a994dde8a6c821a143e24352a0683
