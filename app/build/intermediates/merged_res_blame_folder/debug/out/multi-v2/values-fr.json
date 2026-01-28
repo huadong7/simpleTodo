@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.example.simpletodo.app-mergeDebugResources-50:/values-fr/values-fr.xml",
+            "outputFile": "com.example.simpletodo.app-mergeDebugResources-52:/values-fr/values-fr.xml",
             "map": [
                 {
                     "source": "C:\\Users\\huado\\.gradle\\caches\\9.0-milestone-1\\transforms\\7360e6b6ee658901a16d44caf78ec341\\transformed\\jetified-material3-1.1.1\\res\\values-fr\\values-fr.xml",
@@ -38,7 +38,7 @@
                     }
                 },
                 {
-                    "source": "C:\\Users\\huado\\.gradle\\caches\\9.0-milestone-1\\transforms\\1145aa5a5dc90bd167edd71e5721e77e\\transformed\\jetified-ui-release\\res\\values-fr\\values-fr.xml",
+                    "source": "C:\\Users\\huado\\.gradle\\caches\\9.0-milestone-1\\transforms\\1c66d07ec5ad8fef69fa219db601368d\\transformed\\jetified-ui-release\\res\\values-fr\\values-fr.xml",
                     "from": {
                         "startLines": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18",
                         "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",

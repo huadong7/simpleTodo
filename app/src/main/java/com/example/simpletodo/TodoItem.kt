@@ -10,5 +10,11 @@ data class TodoItem(
     val timeInMillis: Long,
     val isMonthly: Boolean = false,
     val remindCount: Int = 0,
-    val isDone: Boolean = false
+    val isDone: Boolean = false,
+    
+    // New fields for v1.3
+    val remarks: String = "",
+    val imagePaths: List<String> = emptyList(),
+    val maxRetries: Int = 3,
+    val retryIntervalHours: Int = 1
 )

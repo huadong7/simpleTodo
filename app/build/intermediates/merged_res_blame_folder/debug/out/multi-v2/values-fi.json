@@ -1,8 +1,25 @@
 {
     "logs": [
         {
-            "outputFile": "com.example.simpletodo.app-mergeDebugResources-50:/values-fi/values-fi.xml",
+            "outputFile": "com.example.simpletodo.app-mergeDebugResources-52:/values-fi/values-fi.xml",
             "map": [
+                {
+                    "source": "C:\\Users\\huado\\.gradle\\caches\\9.0-milestone-1\\transforms\\1c66d07ec5ad8fef69fa219db601368d\\transformed\\jetified-ui-release\\res\\values-fi\\values-fi.xml",
+                    "from": {
+                        "startLines": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18",
+                        "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
+                        "startOffsets": "105,199,284,383,484,573,650,743,834,916,982,1050,1131,1213,1285,1362,1434",
+                        "endColumns": "93,84,98,100,88,76,92,90,81,65,67,80,81,71,76,71,121",
+                        "endOffsets": "194,279,378,479,568,645,738,829,911,977,1045,1126,1208,1280,1357,1429,1551"
+                    },
+                    "to": {
+                        "startLines": "13,14,47,48,50,52,53,54,55,56,57,58,59,61,65,66,67",
+                        "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
+                        "startOffsets": "1275,1369,5084,5183,5363,5531,5608,5701,5792,5874,5940,6008,6089,6251,6602,6679,6751",
+                        "endColumns": "93,84,98,100,88,76,92,90,81,65,67,80,81,71,76,71,121",
+                        "endOffsets": "1364,1449,5178,5279,5447,5603,5696,5787,5869,5935,6003,6084,6166,6318,6674,6746,6868"
+                    }
+                },
                 {
                     "source": "C:\\Users\\huado\\.gradle\\caches\\9.0-milestone-1\\transforms\\7360e6b6ee658901a16d44caf78ec341\\transformed\\jetified-material3-1.1.1\\res\\values-fi\\values-fi.xml",
                     "from": {
@@ -35,23 +52,6 @@
                         "startOffsets": "541,637,739,837,942,1047,1159,6405",
                         "endColumns": "95,101,97,104,104,111,115,100",
                         "endOffsets": "632,734,832,937,1042,1154,1270,6501"
-                    }
-                },
-                {
-                    "source": "C:\\Users\\huado\\.gradle\\caches\\9.0-milestone-1\\transforms\\1145aa5a5dc90bd167edd71e5721e77e\\transformed\\jetified-ui-release\\res\\values-fi\\values-fi.xml",
-                    "from": {
-                        "startLines": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18",
-                        "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
-                        "startOffsets": "105,199,284,383,484,573,650,743,834,916,982,1050,1131,1213,1285,1362,1434",
-                        "endColumns": "93,84,98,100,88,76,92,90,81,65,67,80,81,71,76,71,121",
-                        "endOffsets": "194,279,378,479,568,645,738,829,911,977,1045,1126,1208,1280,1357,1429,1551"
-                    },
-                    "to": {
-                        "startLines": "13,14,47,48,50,52,53,54,55,56,57,58,59,61,65,66,67",
-                        "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
-                        "startOffsets": "1275,1369,5084,5183,5363,5531,5608,5701,5792,5874,5940,6008,6089,6251,6602,6679,6751",
-                        "endColumns": "93,84,98,100,88,76,92,90,81,65,67,80,81,71,76,71,121",
-                        "endOffsets": "1364,1449,5178,5279,5447,5603,5696,5787,5869,5935,6003,6084,6166,6318,6674,6746,6868"
                     }
                 }
             ]

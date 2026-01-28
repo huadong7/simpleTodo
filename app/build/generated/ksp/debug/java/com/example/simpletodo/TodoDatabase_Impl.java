@@ -33,13 +33,13 @@ public final class TodoDatabase_Impl extends TodoDatabase {
   @Override
   @NonNull
   protected SupportSQLiteOpenHelper createOpenHelper(@NonNull final DatabaseConfiguration config) {
-    final SupportSQLiteOpenHelper.Callback _openCallback = new RoomOpenHelper(config, new RoomOpenHelper.Delegate(2) {
+    final SupportSQLiteOpenHelper.Callback _openCallback = new RoomOpenHelper(config, new RoomOpenHelper.Delegate(3) {
       @Override
       public void createAllTables(@NonNull final SupportSQLiteDatabase db) {
-        db.execSQL("CREATE TABLE IF NOT EXISTS `todo_items` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `timeInMillis` INTEGER NOT NULL, `isMonthly` INTEGER NOT NULL, `remindCount` INTEGER NOT NULL, `isDone` INTEGER NOT NULL)");
+        db.execSQL("CREATE TABLE IF NOT EXISTS `todo_items` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `timeInMillis` INTEGER NOT NULL, `isMonthly` INTEGER NOT NULL, `remindCount` INTEGER NOT NULL, `isDone` INTEGER NOT NULL, `remarks` TEXT NOT NULL, `imagePaths` TEXT NOT NULL, `maxRetries` INTEGER NOT NULL, `retryIntervalHours` INTEGER NOT NULL)");
         db.execSQL("CREATE TABLE IF NOT EXISTS `app_logs` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `timestamp` INTEGER NOT NULL, `tag` TEXT NOT NULL, `message` TEXT NOT NULL)");
         db.execSQL("CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)");
-        db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '786f766f2b64548a2a5653933506b15b')");
+        db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '5c7fc89b38b1e266a2d405d0cad34af0')");
       }
 
       @Override
@@ -89,13 +89,17 @@ public final class TodoDatabase_Impl extends TodoDatabase {
       @NonNull
       public RoomOpenHelper.ValidationResult onValidateSchema(
           @NonNull final SupportSQLiteDatabase db) {
-        final HashMap<String, TableInfo.Column> _columnsTodoItems = new HashMap<String, TableInfo.Column>(6);
+        final HashMap<String, TableInfo.Column> _columnsTodoItems = new HashMap<String, TableInfo.Column>(10);
         _columnsTodoItems.put("id", new TableInfo.Column("id", "INTEGER", true, 1, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsTodoItems.put("name", new TableInfo.Column("name", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsTodoItems.put("timeInMillis", new TableInfo.Column("timeInMillis", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsTodoItems.put("isMonthly", new TableInfo.Column("isMonthly", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsTodoItems.put("remindCount", new TableInfo.Column("remindCount", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsTodoItems.put("isDone", new TableInfo.Column("isDone", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsTodoItems.put("remarks", new TableInfo.Column("remarks", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsTodoItems.put("imagePaths", new TableInfo.Column("imagePaths", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsTodoItems.put("maxRetries", new TableInfo.Column("maxRetries", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsTodoItems.put("retryIntervalHours", new TableInfo.Column("retryIntervalHours", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         final HashSet<TableInfo.ForeignKey> _foreignKeysTodoItems = new HashSet<TableInfo.ForeignKey>(0);
         final HashSet<TableInfo.Index> _indicesTodoItems = new HashSet<TableInfo.Index>(0);
         final TableInfo _infoTodoItems = new TableInfo("todo_items", _columnsTodoItems, _foreignKeysTodoItems, _indicesTodoItems);
@@ -121,7 +125,7 @@ public final class TodoDatabase_Impl extends TodoDatabase {
         }
         return new RoomOpenHelper.ValidationResult(true, null);
       }
-    }, "786f766f2b64548a2a5653933506b15b", "0ee7104ce9f7edbd3222d673531a411b");
+    }, "5c7fc89b38b1e266a2d405d0cad34af0", "d0df78e03ddc80eb703144bad8c20925");
     final SupportSQLiteOpenHelper.Configuration _sqliteConfig = SupportSQLiteOpenHelper.Configuration.builder(config.context).name(config.name).callback(_openCallback).build();
     final SupportSQLiteOpenHelper _helper = config.sqliteOpenHelperFactory.create(_sqliteConfig);
     return _helper;

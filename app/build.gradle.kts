@@ -12,8 +12,8 @@ android {
         applicationId = "com.example.simpletodo"
         minSdk = 26
         targetSdk = 34
-        versionCode = 3
-        versionName = "1.2"
+        versionCode = 4
+        versionName = "1.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -68,6 +68,12 @@ dependencies {
     
     // WorkManager (optional, but good for reliable background work)
     implementation("androidx.work:work-runtime-ktx:2.9.0")
+    
+    // Coil for images
+    implementation("io.coil-kt:coil-compose:2.5.0")
+    
+    // Gson for Converters
+    implementation("com.google.code.gson:gson:2.10.1")
     
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")

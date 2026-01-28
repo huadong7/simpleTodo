@@ -35,6 +35,8 @@ public final class TodoDao_Impl implements TodoDao {
 
   private final EntityInsertionAdapter<TodoItem> __insertionAdapterOfTodoItem;
 
+  private final Converters __converters = new Converters();
+
   private final EntityDeletionOrUpdateAdapter<TodoItem> __deletionAdapterOfTodoItem;
 
   private final EntityDeletionOrUpdateAdapter<TodoItem> __updateAdapterOfTodoItem;
@@ -45,7 +47,7 @@ public final class TodoDao_Impl implements TodoDao {
       @Override
       @NonNull
       protected String createQuery() {
-        return "INSERT OR REPLACE INTO `todo_items` (`id`,`name`,`timeInMillis`,`isMonthly`,`remindCount`,`isDone`) VALUES (nullif(?, 0),?,?,?,?,?)";
+        return "INSERT OR REPLACE INTO `todo_items` (`id`,`name`,`timeInMillis`,`isMonthly`,`remindCount`,`isDone`,`remarks`,`imagePaths`,`maxRetries`,`retryIntervalHours`) VALUES (nullif(?, 0),?,?,?,?,?,?,?,?,?)";
       }
 
       @Override
@@ -59,6 +61,11 @@ public final class TodoDao_Impl implements TodoDao {
         statement.bindLong(5, entity.getRemindCount());
         final int _tmp_1 = entity.isDone() ? 1 : 0;
         statement.bindLong(6, _tmp_1);
+        statement.bindString(7, entity.getRemarks());
+        final String _tmp_2 = __converters.fromList(entity.getImagePaths());
+        statement.bindString(8, _tmp_2);
+        statement.bindLong(9, entity.getMaxRetries());
+        statement.bindLong(10, entity.getRetryIntervalHours());
       }
     };
     this.__deletionAdapterOfTodoItem = new EntityDeletionOrUpdateAdapter<TodoItem>(__db) {
@@ -78,7 +85,7 @@ public final class TodoDao_Impl implements TodoDao {
       @Override
       @NonNull
       protected String createQuery() {
-        return "UPDATE OR ABORT `todo_items` SET `id` = ?,`name` = ?,`timeInMillis` = ?,`isMonthly` = ?,`remindCount` = ?,`isDone` = ? WHERE `id` = ?";
+        return "UPDATE OR ABORT `todo_items` SET `id` = ?,`name` = ?,`timeInMillis` = ?,`isMonthly` = ?,`remindCount` = ?,`isDone` = ?,`remarks` = ?,`imagePaths` = ?,`maxRetries` = ?,`retryIntervalHours` = ? WHERE `id` = ?";
       }
 
       @Override
@@ -92,7 +99,12 @@ public final class TodoDao_Impl implements TodoDao {
         statement.bindLong(5, entity.getRemindCount());
         final int _tmp_1 = entity.isDone() ? 1 : 0;
         statement.bindLong(6, _tmp_1);
-        statement.bindLong(7, entity.getId());
+        statement.bindString(7, entity.getRemarks());
+        final String _tmp_2 = __converters.fromList(entity.getImagePaths());
+        statement.bindString(8, _tmp_2);
+        statement.bindLong(9, entity.getMaxRetries());
+        statement.bindLong(10, entity.getRetryIntervalHours());
+        statement.bindLong(11, entity.getId());
       }
     };
   }
@@ -167,6 +179,10 @@ public final class TodoDao_Impl implements TodoDao {
           final int _cursorIndexOfIsMonthly = CursorUtil.getColumnIndexOrThrow(_cursor, "isMonthly");
           final int _cursorIndexOfRemindCount = CursorUtil.getColumnIndexOrThrow(_cursor, "remindCount");
           final int _cursorIndexOfIsDone = CursorUtil.getColumnIndexOrThrow(_cursor, "isDone");
+          final int _cursorIndexOfRemarks = CursorUtil.getColumnIndexOrThrow(_cursor, "remarks");
+          final int _cursorIndexOfImagePaths = CursorUtil.getColumnIndexOrThrow(_cursor, "imagePaths");
+          final int _cursorIndexOfMaxRetries = CursorUtil.getColumnIndexOrThrow(_cursor, "maxRetries");
+          final int _cursorIndexOfRetryIntervalHours = CursorUtil.getColumnIndexOrThrow(_cursor, "retryIntervalHours");
           final List<TodoItem> _result = new ArrayList<TodoItem>(_cursor.getCount());
           while (_cursor.moveToNext()) {
             final TodoItem _item;
@@ -186,7 +202,17 @@ public final class TodoDao_Impl implements TodoDao {
             final int _tmp_1;
             _tmp_1 = _cursor.getInt(_cursorIndexOfIsDone);
             _tmpIsDone = _tmp_1 != 0;
-            _item = new TodoItem(_tmpId,_tmpName,_tmpTimeInMillis,_tmpIsMonthly,_tmpRemindCount,_tmpIsDone);
+            final String _tmpRemarks;
+            _tmpRemarks = _cursor.getString(_cursorIndexOfRemarks);
+            final List<String> _tmpImagePaths;
+            final String _tmp_2;
+            _tmp_2 = _cursor.getString(_cursorIndexOfImagePaths);
+            _tmpImagePaths = __converters.fromString(_tmp_2);
+            final int _tmpMaxRetries;
+            _tmpMaxRetries = _cursor.getInt(_cursorIndexOfMaxRetries);
+            final int _tmpRetryIntervalHours;
+            _tmpRetryIntervalHours = _cursor.getInt(_cursorIndexOfRetryIntervalHours);
+            _item = new TodoItem(_tmpId,_tmpName,_tmpTimeInMillis,_tmpIsMonthly,_tmpRemindCount,_tmpIsDone,_tmpRemarks,_tmpImagePaths,_tmpMaxRetries,_tmpRetryIntervalHours);
             _result.add(_item);
           }
           return _result;
@@ -219,6 +245,10 @@ public final class TodoDao_Impl implements TodoDao {
           final int _cursorIndexOfIsMonthly = CursorUtil.getColumnIndexOrThrow(_cursor, "isMonthly");
           final int _cursorIndexOfRemindCount = CursorUtil.getColumnIndexOrThrow(_cursor, "remindCount");
           final int _cursorIndexOfIsDone = CursorUtil.getColumnIndexOrThrow(_cursor, "isDone");
+          final int _cursorIndexOfRemarks = CursorUtil.getColumnIndexOrThrow(_cursor, "remarks");
+          final int _cursorIndexOfImagePaths = CursorUtil.getColumnIndexOrThrow(_cursor, "imagePaths");
+          final int _cursorIndexOfMaxRetries = CursorUtil.getColumnIndexOrThrow(_cursor, "maxRetries");
+          final int _cursorIndexOfRetryIntervalHours = CursorUtil.getColumnIndexOrThrow(_cursor, "retryIntervalHours");
           final List<TodoItem> _result = new ArrayList<TodoItem>(_cursor.getCount());
           while (_cursor.moveToNext()) {
             final TodoItem _item;
@@ -238,7 +268,17 @@ public final class TodoDao_Impl implements TodoDao {
             final int _tmp_1;
             _tmp_1 = _cursor.getInt(_cursorIndexOfIsDone);
             _tmpIsDone = _tmp_1 != 0;
-            _item = new TodoItem(_tmpId,_tmpName,_tmpTimeInMillis,_tmpIsMonthly,_tmpRemindCount,_tmpIsDone);
+            final String _tmpRemarks;
+            _tmpRemarks = _cursor.getString(_cursorIndexOfRemarks);
+            final List<String> _tmpImagePaths;
+            final String _tmp_2;
+            _tmp_2 = _cursor.getString(_cursorIndexOfImagePaths);
+            _tmpImagePaths = __converters.fromString(_tmp_2);
+            final int _tmpMaxRetries;
+            _tmpMaxRetries = _cursor.getInt(_cursorIndexOfMaxRetries);
+            final int _tmpRetryIntervalHours;
+            _tmpRetryIntervalHours = _cursor.getInt(_cursorIndexOfRetryIntervalHours);
+            _item = new TodoItem(_tmpId,_tmpName,_tmpTimeInMillis,_tmpIsMonthly,_tmpRemindCount,_tmpIsDone,_tmpRemarks,_tmpImagePaths,_tmpMaxRetries,_tmpRetryIntervalHours);
             _result.add(_item);
           }
           return _result;
@@ -269,6 +309,10 @@ public final class TodoDao_Impl implements TodoDao {
           final int _cursorIndexOfIsMonthly = CursorUtil.getColumnIndexOrThrow(_cursor, "isMonthly");
           final int _cursorIndexOfRemindCount = CursorUtil.getColumnIndexOrThrow(_cursor, "remindCount");
           final int _cursorIndexOfIsDone = CursorUtil.getColumnIndexOrThrow(_cursor, "isDone");
+          final int _cursorIndexOfRemarks = CursorUtil.getColumnIndexOrThrow(_cursor, "remarks");
+          final int _cursorIndexOfImagePaths = CursorUtil.getColumnIndexOrThrow(_cursor, "imagePaths");
+          final int _cursorIndexOfMaxRetries = CursorUtil.getColumnIndexOrThrow(_cursor, "maxRetries");
+          final int _cursorIndexOfRetryIntervalHours = CursorUtil.getColumnIndexOrThrow(_cursor, "retryIntervalHours");
           final TodoItem _result;
           if (_cursor.moveToFirst()) {
             final long _tmpId;
@@ -287,7 +331,17 @@ public final class TodoDao_Impl implements TodoDao {
             final int _tmp_1;
             _tmp_1 = _cursor.getInt(_cursorIndexOfIsDone);
             _tmpIsDone = _tmp_1 != 0;
-            _result = new TodoItem(_tmpId,_tmpName,_tmpTimeInMillis,_tmpIsMonthly,_tmpRemindCount,_tmpIsDone);
+            final String _tmpRemarks;
+            _tmpRemarks = _cursor.getString(_cursorIndexOfRemarks);
+            final List<String> _tmpImagePaths;
+            final String _tmp_2;
+            _tmp_2 = _cursor.getString(_cursorIndexOfImagePaths);
+            _tmpImagePaths = __converters.fromString(_tmp_2);
+            final int _tmpMaxRetries;
+            _tmpMaxRetries = _cursor.getInt(_cursorIndexOfMaxRetries);
+            final int _tmpRetryIntervalHours;
+            _tmpRetryIntervalHours = _cursor.getInt(_cursorIndexOfRetryIntervalHours);
+            _result = new TodoItem(_tmpId,_tmpName,_tmpTimeInMillis,_tmpIsMonthly,_tmpRemindCount,_tmpIsDone,_tmpRemarks,_tmpImagePaths,_tmpMaxRetries,_tmpRetryIntervalHours);
           } else {
             _result = null;
           }

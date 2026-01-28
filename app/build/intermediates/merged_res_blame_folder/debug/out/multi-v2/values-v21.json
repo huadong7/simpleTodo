@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.example.simpletodo.app-mergeDebugResources-50:/values-v21/values-v21.xml",
+            "outputFile": "com.example.simpletodo.app-mergeDebugResources-52:/values-v21/values-v21.xml",
             "map": [
                 {
                     "source": "C:\\Users\\huado\\.gradle\\caches\\9.0-milestone-1\\transforms\\072a6f712645a0e831131459b2899877\\transformed\\core-1.12.0\\res\\values-v21\\values-v21.xml",

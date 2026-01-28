@@ -125,15 +125,16 @@ class ReminderReceiver : BroadcastReceiver() {
         showNotification(context, todo)
 
         // Schedule next retry if needed
-        if (todo.remindCount < MAX_RETRIES) {
-            val nextRetryTime = System.currentTimeMillis() + 60 * 60 * 1000 // 1 hour
+        if (todo.remindCount < todo.maxRetries) {
+            val intervalMillis = todo.retryIntervalHours * 60 * 60 * 1000L
+            val nextRetryTime = System.currentTimeMillis() + intervalMillis
             // Update count
             val updatedTodo = todo.copy(remindCount = todo.remindCount + 1)
             db.todoDao().update(updatedTodo)
             
             // Schedule Retry Alarm
             scheduleAlarm(context, todo.id, nextRetryTime)
-            AppLogger.log(context, "ReminderReceiver", "Scheduled Retry #${updatedTodo.remindCount} at ${Date(nextRetryTime)}")
+            AppLogger.log(context, "ReminderReceiver", "Scheduled Retry #${updatedTodo.remindCount} at ${Date(nextRetryTime)} (Interval: ${todo.retryIntervalHours}h)")
         } else {
             AppLogger.log(context, "ReminderReceiver", "Max Retries Reached for: ${todo.name}")
         }
