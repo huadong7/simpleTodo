@@ -1,6 +1,10 @@
 [
     {
-        "merged": "com.example.simpletodo.app-merged_res-54:/drawable_ic_launcher_foreground.xml.flat",
-        "source": "com.example.simpletodo.app-main-56:/drawable/ic_launcher_foreground.xml"
+        "merged": "com.example.simpletodo.app-merged_res-54:/drawable_ic_todo_icon.xml.flat",
+        "source": "com.example.simpletodo.app-main-56:/drawable/ic_todo_icon.xml"
+    },
+    {
+        "merged": "C:\\Users\\huado\\.gradle\\daemon\\9.0-milestone-1\\com.example.simpletodo.app-merged_res-54:\\drawable_ic_launcher_foreground.xml.flat",
+        "source": "C:\\Users\\huado\\.gradle\\daemon\\9.0-milestone-1\\com.example.simpletodo.app-main-56:\\drawable\\ic_launcher_foreground.xml"
     }
 ]

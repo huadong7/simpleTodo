@@ -27,7 +27,15 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.foundation.gestures.rememberTransformableState
+import androidx.compose.foundation.gestures.transformable
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -332,20 +340,8 @@ fun TodoApp(viewModel: TodoViewModel) {
                     NavigationBarItem(
                         icon = { Icon(Icons.Default.Home, contentDescription = "Tasks") },
                         label = { Text("Tasks") },
-                        selected = selectedTab == 0,
-                        onClick = { selectedTab = 0 }
-                    )
-                    NavigationBarItem(
-                        icon = { Icon(Icons.Default.DateRange, contentDescription = "Calendar") },
-                        label = { Text("Calendar") },
-                        selected = selectedTab == 1,
-                        onClick = { selectedTab = 1 }
-                    )
-                    NavigationBarItem(
-                        icon = { Icon(Icons.Default.Person, contentDescription = "Profile") },
-                        label = { Text("Profile") },
-                        selected = selectedTab == 2,
-                        onClick = { selectedTab = 2 }
+                        selected = true,
+                        onClick = { /* No-op */ }
                     )
                 }
             },
@@ -360,18 +356,12 @@ fun TodoApp(viewModel: TodoViewModel) {
                 }
             }
         ) { padding ->
-            if (selectedTab == 0) {
-                TaskListScreen(
-                    todos = todos, 
-                    viewModel = viewModel, 
-                    padding = padding, 
-                    onShowDialog = { showDialog = true }
-                )
-            } else {
-                Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                    Text("Feature coming soon")
-                }
-            }
+            TaskListScreen(
+                todos = todos, 
+                viewModel = viewModel, 
+                padding = padding, 
+                onShowDialog = { showDialog = true }
+            )
 
             if (showDialog) {
                 AddTodoDialog(
@@ -477,10 +467,66 @@ fun TaskGroupCard(title: String, tasks: List<TodoItem>, viewModel: TodoViewModel
 }
 
 @Composable
+fun ImagePreviewDialog(imagePath: String, onDismiss: () -> Unit) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black)
+                .clickable { onDismiss() }
+        ) {
+            var scale by remember { mutableFloatStateOf(1f) }
+            var offset by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
+            
+            val state = rememberTransformableState { zoomChange, panChange, _ ->
+                scale = (scale * zoomChange).coerceIn(1f, 3f)
+                // offset += panChange 
+            }
+            
+            AsyncImage(
+                model = File(imagePath),
+                contentDescription = "Preview",
+                contentScale = ContentScale.Fit,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer(
+                        scaleX = scale,
+                        scaleY = scale,
+                        translationX = offset.x,
+                        translationY = offset.y
+                    )
+                    .transformable(state = state)
+            )
+            
+            IconButton(
+                onClick = onDismiss,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(16.dp)
+            ) {
+                Icon(
+                    Icons.Default.Close, 
+                    contentDescription = "Close", 
+                    tint = Color.White
+                )
+            }
+        }
+    }
+}
+
+@Composable
 fun TaskItemRow(todo: TodoItem, viewModel: TodoViewModel) {
     var expanded by remember { mutableStateOf(false) }
+    var previewImage by remember { mutableStateOf<String?>(null) }
     val format = SimpleDateFormat("MMM dd", Locale.getDefault())
     val isOverdue = System.currentTimeMillis() > todo.timeInMillis
+    
+    if (previewImage != null) {
+        ImagePreviewDialog(imagePath = previewImage!!, onDismiss = { previewImage = null })
+    }
     
     Column(modifier = Modifier
         .fillMaxWidth()
@@ -547,10 +593,12 @@ fun TaskItemRow(todo: TodoItem, viewModel: TodoViewModel) {
                     AsyncImage(
                         model = File(path),
                         contentDescription = "Attachment",
+                        contentScale = ContentScale.Crop,
                         modifier = Modifier
                             .size(60.dp)
                             .clip(RoundedCornerShape(8.dp))
                             .background(Color.LightGray)
+                            .clickable { previewImage = path }
                     )
                 }
             }

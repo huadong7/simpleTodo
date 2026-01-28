@@ -15,6 +15,8 @@ import androidx.room.TypeConverters
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.flow.Flow
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Dao
 interface TodoDao {
@@ -79,7 +81,11 @@ abstract class TodoDatabase : RoomDatabase() {
                     TodoDatabase::class.java,
                     "todo_database"
                 )
-                .fallbackToDestructiveMigration() // Simple migration strategy for dev
+                // Remove fallbackToDestructiveMigration() to prevent data loss
+                // Add explicit migrations if needed for future schema changes
+                // For now, version 3 is stable, and we'll keep it as is.
+                // If we were upgrading version, we would need:
+                // .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                 .build()
                 INSTANCE = instance
                 instance
