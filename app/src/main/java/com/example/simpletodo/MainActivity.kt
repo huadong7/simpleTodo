@@ -174,7 +174,7 @@ class TodoViewModel(private val repository: TodoRepository, private val context:
         }
     }
 
-    fun addTodo(name: String, timeInMillis: Long, isMonthly: Boolean, remarks: String, imageUris: List<Uri>, maxRetries: Int, retryIntervalHours: Int) {
+    fun addTodo(name: String, timeInMillis: Long, repeatMode: Int, remarks: String, imageUris: List<Uri>, maxRetries: Int, retryIntervalHours: Int) {
         viewModelScope.launch {
             val imagePaths = imageUris.mapNotNull { uri ->
                 ImageStorageManager.copyImageToInternalStorage(context, uri)
@@ -183,7 +183,9 @@ class TodoViewModel(private val repository: TodoRepository, private val context:
             val item = TodoItem(
                 name = name, 
                 timeInMillis = timeInMillis, 
-                isMonthly = isMonthly,
+                // isMonthly deprecated, use repeatMode. 0=None, 1=Weekly, 2=Monthly
+                repeatMode = repeatMode,
+                isMonthly = repeatMode == 2, 
                 remarks = remarks,
                 imagePaths = imagePaths,
                 maxRetries = maxRetries,
@@ -192,6 +194,29 @@ class TodoViewModel(private val repository: TodoRepository, private val context:
             val id = repository.insert(item)
             AppLogger.log(context, "TodoViewModel", "Added new todo: $name (ID: $id)")
             scheduleAlarm(context, id, timeInMillis)
+        }
+    }
+
+    fun updateTodo(todo: TodoItem, name: String, timeInMillis: Long, repeatMode: Int, remarks: String, imageUris: List<Uri>, maxRetries: Int, retryIntervalHours: Int) {
+        viewModelScope.launch {
+            // Process new images if any
+            val newImagePaths = imageUris.mapNotNull { uri ->
+                ImageStorageManager.copyImageToInternalStorage(context, uri)
+            }
+            
+            val updated = todo.copy(
+                name = name,
+                timeInMillis = timeInMillis,
+                repeatMode = repeatMode,
+                isMonthly = repeatMode == 2,
+                remarks = remarks,
+                imagePaths = todo.imagePaths + newImagePaths, // Append new images
+                maxRetries = maxRetries,
+                retryIntervalHours = retryIntervalHours
+            )
+            repository.update(updated)
+            scheduleAlarm(context, updated.id, timeInMillis)
+            AppLogger.log(context, "TodoViewModel", "Updated todo: ${updated.name}")
         }
     }
 
@@ -205,16 +230,21 @@ class TodoViewModel(private val repository: TodoRepository, private val context:
 
     fun markDone(todo: TodoItem) {
         viewModelScope.launch {
-            if (todo.isMonthly) {
+            if (todo.repeatMode > 0 || todo.isMonthly) {
                 val calendar = Calendar.getInstance()
                 calendar.timeInMillis = todo.timeInMillis
-                calendar.add(Calendar.MONTH, 1)
+                
+                if (todo.repeatMode == 1) {
+                     calendar.add(Calendar.DAY_OF_YEAR, 7) // Weekly
+                } else {
+                     calendar.add(Calendar.MONTH, 1) // Monthly (Default or repeatMode 2)
+                }
                 
                 val nextTime = calendar.timeInMillis
                 val updated = todo.copy(timeInMillis = nextTime, remindCount = 0, isDone = false)
                 repository.update(updated)
                 scheduleAlarm(context, updated.id, nextTime)
-                AppLogger.log(context, "TodoViewModel", "Marked monthly done: ${todo.name}, rescheduled to ${Date(nextTime)}")
+                AppLogger.log(context, "TodoViewModel", "Marked recurring done: ${todo.name}, rescheduled to ${Date(nextTime)}")
             } else {
                 val updated = todo.copy(isDone = !todo.isDone) // Toggle logic
                 repository.update(updated)
@@ -306,8 +336,8 @@ class TodoViewModelFactory(private val repository: TodoRepository, private val c
 fun TodoApp(viewModel: TodoViewModel) {
     val todos by viewModel.todos.collectAsState()
     var showDialog by remember { mutableStateOf(false) }
+    var editTodo by remember { mutableStateOf<TodoItem?>(null) }
     var showLogs by remember { mutableStateOf(false) }
-    var selectedTab by remember { mutableStateOf(0) }
 
     if (showLogs) {
         LogViewerScreen(
@@ -317,37 +347,53 @@ fun TodoApp(viewModel: TodoViewModel) {
     } else {
         Scaffold(
             topBar = {
-                CenterAlignedTopAppBar(
-                    title = { 
-                        Text(
-                            "My Tasks", 
-                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
-                        ) 
-                    },
-                    actions = {
-                        IconButton(onClick = { showLogs = true }) {
-                            Icon(Icons.Default.Info, contentDescription = "View Logs")
+                // Compact Top Bar with integrated Warning and Actions
+                Surface(
+                    color = MaterialTheme.colorScheme.background,
+                    shadowElevation = 4.dp
+                ) {
+                    Column {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                             // Title/Hint Area
+                             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                                 if (Build.MANUFACTURER.equals("Xiaomi", ignoreCase = true)) {
+                                     Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(16.dp))
+                                     Spacer(modifier = Modifier.width(4.dp))
+                                     Text(
+                                         "Xiaomi: Enable Autostart",
+                                         style = MaterialTheme.typography.labelMedium,
+                                         color = MaterialTheme.colorScheme.error,
+                                         maxLines = 1,
+                                         overflow = TextOverflow.Ellipsis
+                                     )
+                                 } else {
+                                     Text(
+                                         "SimpleTodo",
+                                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                                     )
+                                 }
+                             }
+                             
+                             // Actions
+                             IconButton(onClick = { showLogs = true }, modifier = Modifier.size(32.dp)) {
+                                Icon(Icons.Default.Info, contentDescription = "Logs", tint = MaterialTheme.colorScheme.onSurface)
+                             }
                         }
-                    },
-                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.background,
-                        titleContentColor = MaterialTheme.colorScheme.onBackground
-                    )
-                )
-            },
-            bottomBar = {
-                NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
-                    NavigationBarItem(
-                        icon = { Icon(Icons.Default.Home, contentDescription = "Tasks") },
-                        label = { Text("Tasks") },
-                        selected = true,
-                        onClick = { /* No-op */ }
-                    )
+                    }
                 }
             },
             floatingActionButton = {
                 FloatingActionButton(
-                    onClick = { showDialog = true },
+                    onClick = { 
+                        editTodo = null
+                        showDialog = true 
+                    },
                     containerColor = Color(0xFF4A7DFF),
                     contentColor = Color.White,
                     shape = RoundedCornerShape(50)
@@ -360,14 +406,22 @@ fun TodoApp(viewModel: TodoViewModel) {
                 todos = todos, 
                 viewModel = viewModel, 
                 padding = padding, 
-                onShowDialog = { showDialog = true }
+                onEdit = { todo ->
+                    editTodo = todo
+                    showDialog = true
+                }
             )
 
             if (showDialog) {
-                AddTodoDialog(
+                AddEditTodoDialog(
+                    todo = editTodo,
                     onDismiss = { showDialog = false },
-                    onConfirm = { name, time, isMonthly, remarks, images, maxRetries, retryInterval ->
-                        viewModel.addTodo(name, time, isMonthly, remarks, images, maxRetries, retryInterval)
+                    onConfirm = { name, time, repeatMode, remarks, images, maxRetries, retryInterval ->
+                        if (editTodo == null) {
+                            viewModel.addTodo(name, time, repeatMode, remarks, images, maxRetries, retryInterval)
+                        } else {
+                            viewModel.updateTodo(editTodo!!, name, time, repeatMode, remarks, images, maxRetries, retryInterval)
+                        }
                         showDialog = false
                     }
                 )
@@ -377,7 +431,7 @@ fun TodoApp(viewModel: TodoViewModel) {
 }
 
 @Composable
-fun TaskListScreen(todos: List<TodoItem>, viewModel: TodoViewModel, padding: PaddingValues, onShowDialog: () -> Unit) {
+fun TaskListScreen(todos: List<TodoItem>, viewModel: TodoViewModel, padding: PaddingValues, onEdit: (TodoItem) -> Unit) {
     val now = System.currentTimeMillis()
     val threeDays = 3 * 24 * 60 * 60 * 1000L
     val sevenDays = 7 * 24 * 60 * 60 * 1000L
@@ -388,34 +442,18 @@ fun TaskListScreen(todos: List<TodoItem>, viewModel: TodoViewModel, padding: Pad
     val further = todos.filter { !it.isDone && it.timeInMillis > now + sevenDays }.sortedBy { it.timeInMillis }
     
     Column(modifier = Modifier.padding(padding).fillMaxSize().verticalScroll(rememberScrollState())) {
-         // Warning Banner for Xiaomi/HyperOS users
-        if (Build.MANUFACTURER.equals("Xiaomi", ignoreCase = true)) {
-            Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
-            ) {
-                Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Warning, contentDescription = "Warning", tint = MaterialTheme.colorScheme.onErrorContainer)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        "On HyperOS/MIUI, enable 'Autostart' in App Info for reminders.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onErrorContainer
-                    )
-                }
-            }
-        }
+        // Warning Banner removed from here as it's moved to TopBar
         
         if (within3Days.isNotEmpty()) {
-            TaskGroupCard(title = "Within 3 Days", tasks = within3Days, viewModel = viewModel)
+            TaskGroupCard(title = "Within 3 Days", tasks = within3Days, viewModel = viewModel, onEdit = onEdit)
         }
         
         if (next7Days.isNotEmpty()) {
-            TaskGroupCard(title = "Next 7 Days", tasks = next7Days, viewModel = viewModel)
+            TaskGroupCard(title = "Next 7 Days", tasks = next7Days, viewModel = viewModel, onEdit = onEdit)
         }
         
         if (further.isNotEmpty()) {
-            TaskGroupCard(title = "Further", tasks = further, viewModel = viewModel)
+            TaskGroupCard(title = "Further", tasks = further, viewModel = viewModel, onEdit = onEdit)
         }
         
         if (within3Days.isEmpty() && next7Days.isEmpty() && further.isEmpty()) {
@@ -429,7 +467,7 @@ fun TaskListScreen(todos: List<TodoItem>, viewModel: TodoViewModel, padding: Pad
 }
 
 @Composable
-fun TaskGroupCard(title: String, tasks: List<TodoItem>, viewModel: TodoViewModel) {
+fun TaskGroupCard(title: String, tasks: List<TodoItem>, viewModel: TodoViewModel, onEdit: (TodoItem) -> Unit) {
     Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
         // Header
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -455,7 +493,7 @@ fun TaskGroupCard(title: String, tasks: List<TodoItem>, viewModel: TodoViewModel
                 
                 Column {
                     tasks.forEachIndexed { index, todo ->
-                        TaskItemRow(todo, viewModel)
+                        TaskItemRow(todo, viewModel, onEdit)
                         if (index < tasks.size - 1) {
                             Divider(color = Color.LightGray.copy(alpha = 0.2f), thickness = 0.5.dp)
                         }
@@ -518,14 +556,40 @@ fun ImagePreviewDialog(imagePath: String, onDismiss: () -> Unit) {
 }
 
 @Composable
-fun TaskItemRow(todo: TodoItem, viewModel: TodoViewModel) {
+fun TaskItemRow(todo: TodoItem, viewModel: TodoViewModel, onEdit: (TodoItem) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     var previewImage by remember { mutableStateOf<String?>(null) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+    
     val format = SimpleDateFormat("MMM dd", Locale.getDefault())
     val isOverdue = System.currentTimeMillis() > todo.timeInMillis
     
     if (previewImage != null) {
         ImagePreviewDialog(imagePath = previewImage!!, onDismiss = { previewImage = null })
+    }
+    
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title = { Text("Delete Task") },
+            text = { Text("Are you sure you want to delete '${todo.name}'?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.deleteTodo(todo)
+                        showDeleteConfirm = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
     
     Column(modifier = Modifier
@@ -574,7 +638,7 @@ fun TaskItemRow(todo: TodoItem, viewModel: TodoViewModel) {
                 )
                 
                 Row(modifier = Modifier.padding(top = 4.dp)) {
-                    if (todo.isMonthly) {
+                    if (todo.repeatMode > 0) {
                          Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(12.dp), tint = Color.Gray)
                          Spacer(modifier = Modifier.width(4.dp))
                     }
@@ -604,10 +668,25 @@ fun TaskItemRow(todo: TodoItem, viewModel: TodoViewModel) {
             }
         }
         
-        // Expanded Content (Delete)
+        // Expanded Content (Actions)
         if (expanded) {
+             Spacer(modifier = Modifier.height(8.dp))
              Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                TextButton(onClick = { viewModel.deleteTodo(todo) }) {
+                 if (todo.repeatMode > 0) {
+                     Text(
+                        text = if (todo.repeatMode == 1) "Repeats Weekly" else "Repeats Monthly",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.Gray,
+                        modifier = Modifier.align(Alignment.CenterVertically).weight(1f)
+                     )
+                 }
+                 
+                TextButton(onClick = { onEdit(todo) }) {
+                    Icon(Icons.Default.Edit, contentDescription = "Edit", modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Edit")
+                }
+                TextButton(onClick = { showDeleteConfirm = true }) {
                     Text("Delete", color = MaterialTheme.colorScheme.error)
                 }
              }
@@ -617,22 +696,30 @@ fun TaskItemRow(todo: TodoItem, viewModel: TodoViewModel) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddTodoDialog(onDismiss: () -> Unit, onConfirm: (String, Long, Boolean, String, List<Uri>, Int, Int) -> Unit) {
-    var name by remember { mutableStateOf("") }
-    var remarks by remember { mutableStateOf("") }
-    var isMonthly by remember { mutableStateOf(false) }
+fun AddEditTodoDialog(
+    todo: TodoItem? = null,
+    onDismiss: () -> Unit, 
+    onConfirm: (String, Long, Int, String, List<Uri>, Int, Int) -> Unit
+) {
+    var name by remember { mutableStateOf(todo?.name ?: "") }
+    var remarks by remember { mutableStateOf(todo?.remarks ?: "") }
+    var repeatMode by remember { mutableStateOf(todo?.repeatMode ?: 0) }
     var selectedImages by remember { mutableStateOf<List<Uri>>(emptyList()) }
-    var maxRetries by remember { mutableStateOf(3) }
-    var retryInterval by remember { mutableStateOf(1) }
+    var maxRetries by remember { mutableStateOf(todo?.maxRetries ?: 3) }
+    var retryInterval by remember { mutableStateOf(todo?.retryIntervalHours ?: 1) }
     
     val context = LocalContext.current
     val calendar = Calendar.getInstance()
-    calendar.add(Calendar.HOUR_OF_DAY, 1)
-    calendar.set(Calendar.MINUTE, 0)
+    if (todo != null) {
+        calendar.timeInMillis = todo.timeInMillis
+    } else {
+        calendar.add(Calendar.HOUR_OF_DAY, 1)
+        calendar.set(Calendar.MINUTE, 0)
+    }
     var selectedTime by remember { mutableStateOf(calendar.timeInMillis) }
     
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris ->
-        selectedImages = (selectedImages + uris).take(3)
+        selectedImages = (selectedImages + uris).take(3 - (todo?.imagePaths?.size ?: 0))
     }
 
     val datePickerDialog = DatePickerDialog(context, { _, y, m, d -> 
@@ -647,7 +734,7 @@ fun AddTodoDialog(onDismiss: () -> Unit, onConfirm: (String, Long, Boolean, Stri
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("New Task") },
+        title = { Text(if (todo == null) "New Task" else "Edit Task") },
         text = {
             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Title") }, modifier = Modifier.fillMaxWidth())
@@ -673,10 +760,22 @@ fun AddTodoDialog(onDismiss: () -> Unit, onConfirm: (String, Long, Boolean, Stri
                 }
                 
                 Spacer(modifier = Modifier.height(8.dp))
+                
+                // Existing Images (for Edit mode)
+                if (todo != null && todo.imagePaths.isNotEmpty()) {
+                    Text("Existing Images:", style = MaterialTheme.typography.bodySmall)
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        todo.imagePaths.forEach { path ->
+                            AsyncImage(model = File(path), contentDescription = null, modifier = Modifier.size(40.dp).clip(RoundedCornerShape(4.dp)).background(Color.LightGray))
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+
                 OutlinedButton(onClick = { launcher.launch("image/*") }, modifier = Modifier.fillMaxWidth()) {
                     Icon(Icons.Default.Add, null)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Attach Images (${selectedImages.size}/3)")
+                    Text("Add Images (${selectedImages.size + (todo?.imagePaths?.size ?: 0)}/3)")
                 }
                 if (selectedImages.isNotEmpty()) {
                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -689,10 +788,26 @@ fun AddTodoDialog(onDismiss: () -> Unit, onConfirm: (String, Long, Boolean, Stri
                 Spacer(modifier = Modifier.height(16.dp))
                 Text("Advanced Settings", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                 Divider()
+                
+                // Repeat Mode Selection
+                Text("Repeat:", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 8.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(checked = isMonthly, onCheckedChange = { isMonthly = it })
-                    Text("Repeat Monthly", style = MaterialTheme.typography.bodySmall)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        RadioButton(selected = repeatMode == 0, onClick = { repeatMode = 0 })
+                        Text("None", style = MaterialTheme.typography.bodySmall)
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        RadioButton(selected = repeatMode == 1, onClick = { repeatMode = 1 })
+                        Text("Weekly", style = MaterialTheme.typography.bodySmall)
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        RadioButton(selected = repeatMode == 2, onClick = { repeatMode = 2 })
+                        Text("Monthly", style = MaterialTheme.typography.bodySmall)
+                    }
                 }
+
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("Retries: $maxRetries", style = MaterialTheme.typography.bodySmall, modifier = Modifier.width(80.dp))
                     Slider(
@@ -716,8 +831,8 @@ fun AddTodoDialog(onDismiss: () -> Unit, onConfirm: (String, Long, Boolean, Stri
             }
         },
         confirmButton = {
-            Button(onClick = { if (name.isNotBlank()) onConfirm(name, selectedTime, isMonthly, remarks, selectedImages, maxRetries, retryInterval) }) {
-                Text("Save")
+            Button(onClick = { if (name.isNotBlank()) onConfirm(name, selectedTime, repeatMode, remarks, selectedImages, maxRetries, retryInterval) }) {
+                Text(if (todo == null) "Save" else "Update")
             }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }

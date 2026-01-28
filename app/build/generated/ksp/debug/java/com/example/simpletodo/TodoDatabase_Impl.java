@@ -33,13 +33,13 @@ public final class TodoDatabase_Impl extends TodoDatabase {
   @Override
   @NonNull
   protected SupportSQLiteOpenHelper createOpenHelper(@NonNull final DatabaseConfiguration config) {
-    final SupportSQLiteOpenHelper.Callback _openCallback = new RoomOpenHelper(config, new RoomOpenHelper.Delegate(3) {
+    final SupportSQLiteOpenHelper.Callback _openCallback = new RoomOpenHelper(config, new RoomOpenHelper.Delegate(4) {
       @Override
       public void createAllTables(@NonNull final SupportSQLiteDatabase db) {
-        db.execSQL("CREATE TABLE IF NOT EXISTS `todo_items` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `timeInMillis` INTEGER NOT NULL, `isMonthly` INTEGER NOT NULL, `remindCount` INTEGER NOT NULL, `isDone` INTEGER NOT NULL, `remarks` TEXT NOT NULL, `imagePaths` TEXT NOT NULL, `maxRetries` INTEGER NOT NULL, `retryIntervalHours` INTEGER NOT NULL)");
+        db.execSQL("CREATE TABLE IF NOT EXISTS `todo_items` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `timeInMillis` INTEGER NOT NULL, `isMonthly` INTEGER NOT NULL, `remindCount` INTEGER NOT NULL, `isDone` INTEGER NOT NULL, `remarks` TEXT NOT NULL, `imagePaths` TEXT NOT NULL, `maxRetries` INTEGER NOT NULL, `retryIntervalHours` INTEGER NOT NULL, `repeatMode` INTEGER NOT NULL)");
         db.execSQL("CREATE TABLE IF NOT EXISTS `app_logs` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `timestamp` INTEGER NOT NULL, `tag` TEXT NOT NULL, `message` TEXT NOT NULL)");
         db.execSQL("CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)");
-        db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '5c7fc89b38b1e266a2d405d0cad34af0')");
+        db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '6b23d406d98c8dfeb6818d1941f41c97')");
       }
 
       @Override
@@ -89,7 +89,7 @@ public final class TodoDatabase_Impl extends TodoDatabase {
       @NonNull
       public RoomOpenHelper.ValidationResult onValidateSchema(
           @NonNull final SupportSQLiteDatabase db) {
-        final HashMap<String, TableInfo.Column> _columnsTodoItems = new HashMap<String, TableInfo.Column>(10);
+        final HashMap<String, TableInfo.Column> _columnsTodoItems = new HashMap<String, TableInfo.Column>(11);
         _columnsTodoItems.put("id", new TableInfo.Column("id", "INTEGER", true, 1, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsTodoItems.put("name", new TableInfo.Column("name", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsTodoItems.put("timeInMillis", new TableInfo.Column("timeInMillis", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
@@ -100,6 +100,7 @@ public final class TodoDatabase_Impl extends TodoDatabase {
         _columnsTodoItems.put("imagePaths", new TableInfo.Column("imagePaths", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsTodoItems.put("maxRetries", new TableInfo.Column("maxRetries", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsTodoItems.put("retryIntervalHours", new TableInfo.Column("retryIntervalHours", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsTodoItems.put("repeatMode", new TableInfo.Column("repeatMode", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         final HashSet<TableInfo.ForeignKey> _foreignKeysTodoItems = new HashSet<TableInfo.ForeignKey>(0);
         final HashSet<TableInfo.Index> _indicesTodoItems = new HashSet<TableInfo.Index>(0);
         final TableInfo _infoTodoItems = new TableInfo("todo_items", _columnsTodoItems, _foreignKeysTodoItems, _indicesTodoItems);
@@ -125,7 +126,7 @@ public final class TodoDatabase_Impl extends TodoDatabase {
         }
         return new RoomOpenHelper.ValidationResult(true, null);
       }
-    }, "5c7fc89b38b1e266a2d405d0cad34af0", "d0df78e03ddc80eb703144bad8c20925");
+    }, "6b23d406d98c8dfeb6818d1941f41c97", "cfff5aed7b91ac75a4ba5fa6cb08a066");
     final SupportSQLiteOpenHelper.Configuration _sqliteConfig = SupportSQLiteOpenHelper.Configuration.builder(config.context).name(config.name).callback(_openCallback).build();
     final SupportSQLiteOpenHelper _helper = config.sqliteOpenHelperFactory.create(_sqliteConfig);
     return _helper;

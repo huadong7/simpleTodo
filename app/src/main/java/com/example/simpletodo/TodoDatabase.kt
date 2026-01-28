@@ -64,7 +64,7 @@ class Converters {
     }
 }
 
-@Database(entities = [TodoItem::class, LogEntry::class], version = 3, exportSchema = false)
+@Database(entities = [TodoItem::class, LogEntry::class], version = 4, exportSchema = false)
 @TypeConverters(Converters::class)
 abstract class TodoDatabase : RoomDatabase() {
     abstract fun todoDao(): TodoDao
@@ -73,6 +73,19 @@ abstract class TodoDatabase : RoomDatabase() {
     companion object {
         @Volatile
         private var INSTANCE: TodoDatabase? = null
+        
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Add repeatMode column with default value 0
+                db.execSQL("ALTER TABLE todo_items ADD COLUMN repeatMode INTEGER NOT NULL DEFAULT 0")
+                
+                // Migrate isMonthly to repeatMode
+                // If isMonthly was true (1), set repeatMode to 2 (Monthly)
+                // We can't easily do conditional update based on boolean in raw SQL effectively cross-db but 
+                // in SQLite: UPDATE table SET repeatMode = 2 WHERE isMonthly = 1
+                db.execSQL("UPDATE todo_items SET repeatMode = 2 WHERE isMonthly = 1")
+            }
+        }
 
         fun getDatabase(context: Context): TodoDatabase {
             return INSTANCE ?: synchronized(this) {
@@ -81,11 +94,7 @@ abstract class TodoDatabase : RoomDatabase() {
                     TodoDatabase::class.java,
                     "todo_database"
                 )
-                // Remove fallbackToDestructiveMigration() to prevent data loss
-                // Add explicit migrations if needed for future schema changes
-                // For now, version 3 is stable, and we'll keep it as is.
-                // If we were upgrading version, we would need:
-                // .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                .addMigrations(MIGRATION_3_4)
                 .build()
                 INSTANCE = instance
                 instance

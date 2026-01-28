@@ -16,5 +16,9 @@ data class TodoItem(
     val remarks: String = "",
     val imagePaths: List<String> = emptyList(),
     val maxRetries: Int = 3,
-    val retryIntervalHours: Int = 1
+    val retryIntervalHours: Int = 1,
+    
+    // New fields for v1.5
+    // 0 = None, 1 = Weekly, 2 = Monthly
+    val repeatMode: Int = 0 
 )
