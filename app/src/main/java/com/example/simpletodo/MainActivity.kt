@@ -14,6 +14,14 @@ import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
 import android.widget.Toast
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.ui.unit.sp
+import androidx.compose.material.icons.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Add
+
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -128,15 +136,17 @@ class MainActivity : ComponentActivity() {
 // --- Theme ---
 @Composable
 fun SimpleTodoTheme(content: @Composable () -> Unit) {
-    val primaryColor = Color(0xFF4A7DFF) // Updated Blue
+    val isDark = isSystemInDarkTheme()
+    
+    val primaryColor = Color(0xFF4A7DFF)
     val secondaryColor = Color(0xFF625B71)
     val tertiaryColor = Color(0xFF7D5260)
 
-    val colorScheme = lightColorScheme(
+    val lightColors = lightColorScheme(
         primary = primaryColor,
         secondary = secondaryColor,
         tertiary = tertiaryColor,
-        background = Color(0xFFF5F5F5), // Light Gray Background
+        background = Color(0xFFF5F5F5),
         surface = Color.White,
         onPrimary = Color.White,
         onSecondary = Color.White,
@@ -144,6 +154,28 @@ fun SimpleTodoTheme(content: @Composable () -> Unit) {
         onBackground = Color(0xFF1C1B1F),
         onSurface = Color(0xFF1C1B1F),
     )
+    
+    val darkColors = darkColorScheme(
+        primary = Color(0xFFB3C5FF),
+        secondary = Color(0xFFCCC2DC),
+        tertiary = Color(0xFFEFB8C8),
+        background = Color(0xFF141218),
+        surface = Color(0xFF141218),
+        onPrimary = Color(0xFF002A78),
+        onSecondary = Color(0xFF332D41),
+        onTertiary = Color(0xFF492532),
+        onBackground = Color(0xFFE6E1E5),
+        onSurface = Color(0xFFE6E1E5),
+    )
+
+    val colorScheme = when {
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+            val context = LocalContext.current
+            if (isDark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+        }
+        isDark -> darkColors
+        else -> lightColors
+    }
 
     MaterialTheme(
         colorScheme = colorScheme,
@@ -555,6 +587,8 @@ fun ImagePreviewDialog(imagePath: String, onDismiss: () -> Unit) {
     }
 }
 
+// ...
+
 @Composable
 fun TaskItemRow(todo: TodoItem, viewModel: TodoViewModel, onEdit: (TodoItem) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
@@ -562,7 +596,16 @@ fun TaskItemRow(todo: TodoItem, viewModel: TodoViewModel, onEdit: (TodoItem) -> 
     var showDeleteConfirm by remember { mutableStateOf(false) }
     
     val format = SimpleDateFormat("MMM dd", Locale.getDefault())
-    val isOverdue = System.currentTimeMillis() > todo.timeInMillis
+    val now = System.currentTimeMillis()
+    val isOverdue = now > todo.timeInMillis
+    val isDueToday = todo.timeInMillis - now < 24 * 60 * 60 * 1000L && !isOverdue
+    val isDueSoon = todo.timeInMillis - now < 3 * 24 * 60 * 60 * 1000L
+    
+    val priorityColor = when {
+        isOverdue || isDueToday -> Color(0xFFFF6B6B) // High: Red
+        isDueSoon -> Color(0xFFFFA726) // Medium: Orange
+        else -> Color(0xFF66BB6A) // Low: Green
+    }
     
     if (previewImage != null) {
         ImagePreviewDialog(imagePath = previewImage!!, onDismiss = { previewImage = null })
@@ -571,8 +614,8 @@ fun TaskItemRow(todo: TodoItem, viewModel: TodoViewModel, onEdit: (TodoItem) -> 
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            title = { Text("Delete Task") },
-            text = { Text("Are you sure you want to delete '${todo.name}'?") },
+            title = { Text("删除任务") },
+            text = { Text("确定要删除 '${todo.name}' 吗？") },
             confirmButton = {
                 Button(
                     onClick = {
@@ -581,12 +624,12 @@ fun TaskItemRow(todo: TodoItem, viewModel: TodoViewModel, onEdit: (TodoItem) -> 
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                 ) {
-                    Text("Delete")
+                    Text("删除")
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = false }) {
-                    Text("Cancel")
+                    Text("取消")
                 }
             }
         )
@@ -603,7 +646,7 @@ fun TaskItemRow(todo: TodoItem, viewModel: TodoViewModel, onEdit: (TodoItem) -> 
                 checked = todo.isDone,
                 onCheckedChange = { viewModel.markDone(todo) },
                 colors = CheckboxDefaults.colors(
-                    checkedColor = Color(0xFF4A7DFF),
+                    checkedColor = MaterialTheme.colorScheme.primary,
                     uncheckedColor = Color.Gray
                 ),
                 modifier = Modifier.size(20.dp)
@@ -629,22 +672,51 @@ fun TaskItemRow(todo: TodoItem, viewModel: TodoViewModel, onEdit: (TodoItem) -> 
                 }
             }
             
-            // Metadata
+            // Metadata & Priority
             Column(horizontalAlignment = Alignment.End) {
-                Text(
-                    text = format.format(Date(todo.timeInMillis)),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (isOverdue) MaterialTheme.colorScheme.error else Color(0xFF4A7DFF)
-                )
+                // Priority Tag
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(priorityColor)
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        text = format.format(Date(todo.timeInMillis)),
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 12.sp),
+                        color = Color.White
+                    )
+                }
                 
-                Row(modifier = Modifier.padding(top = 4.dp)) {
+                Spacer(modifier = Modifier.height(4.dp))
+                
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     if (todo.repeatMode > 0) {
-                         Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(12.dp), tint = Color.Gray)
-                         Spacer(modifier = Modifier.width(4.dp))
+                         Surface(
+                             color = MaterialTheme.colorScheme.secondaryContainer,
+                             shape = RoundedCornerShape(4.dp),
+                             modifier = Modifier.padding(end = 4.dp)
+                         ) {
+                             Text(
+                                 text = if (todo.repeatMode == 1) "每周" else "每月",
+                                 style = MaterialTheme.typography.labelSmall,
+                                 modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                                 color = MaterialTheme.colorScheme.onSecondaryContainer
+                             )
+                         }
                     }
                     if (todo.imagePaths.isNotEmpty()) {
                         Icon(Icons.Default.Star, contentDescription = null, modifier = Modifier.size(12.dp), tint = Color.Gray)
+                        Spacer(modifier = Modifier.width(4.dp))
                     }
+                    
+                    // Expand Arrow Hint
+                    Icon(
+                        Icons.Default.KeyboardArrowDown, 
+                        contentDescription = "Expand", 
+                        modifier = Modifier.size(16.dp),
+                        tint = Color.LightGray
+                    )
                 }
             }
         }
@@ -670,26 +742,64 @@ fun TaskItemRow(todo: TodoItem, viewModel: TodoViewModel, onEdit: (TodoItem) -> 
         
         // Expanded Content (Actions)
         if (expanded) {
-             Spacer(modifier = Modifier.height(8.dp))
+             Spacer(modifier = Modifier.height(12.dp))
              Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                 if (todo.repeatMode > 0) {
-                     Text(
-                        text = if (todo.repeatMode == 1) "Repeats Weekly" else "Repeats Monthly",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray,
-                        modifier = Modifier.align(Alignment.CenterVertically).weight(1f)
-                     )
-                 }
-                 
-                TextButton(onClick = { onEdit(todo) }) {
+                FilledTonalButton(
+                    onClick = { onEdit(todo) },
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+                ) {
                     Icon(Icons.Default.Edit, contentDescription = "Edit", modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Edit")
+                    Text("编辑")
                 }
-                TextButton(onClick = { showDeleteConfirm = true }) {
-                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                Spacer(modifier = Modifier.width(8.dp))
+                FilledTonalButton(
+                    onClick = { showDeleteConfirm = true },
+                    colors = ButtonDefaults.filledTonalButtonColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer
+                    ),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+                ) {
+                    Icon(Icons.Default.Delete, contentDescription = "Delete", modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("删除")
                 }
              }
+        }
+    }
+}
+
+@Composable
+fun NumericStepper(
+    value: Int,
+    onValueChange: (Int) -> Unit,
+    range: IntRange,
+    unit: String = ""
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
+    ) {
+        IconButton(
+            onClick = { if (value > range.first) onValueChange(value - 1) },
+            enabled = value > range.first
+        ) {
+            Icon(Icons.Default.KeyboardArrowLeft, contentDescription = "Decrease")
+        }
+        
+        Text(
+            text = "$value$unit",
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.padding(horizontal = 8.dp),
+            fontWeight = FontWeight.Bold
+        )
+        
+        IconButton(
+            onClick = { if (value < range.last) onValueChange(value + 1) },
+            enabled = value < range.last
+        ) {
+            Icon(Icons.Default.KeyboardArrowRight, contentDescription = "Increase")
         }
     }
 }
@@ -808,24 +918,34 @@ fun AddEditTodoDialog(
                     }
                 }
 
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Retries: $maxRetries", style = MaterialTheme.typography.bodySmall, modifier = Modifier.width(80.dp))
-                    Slider(
-                        value = maxRetries.toFloat(), 
-                        onValueChange = { maxRetries = it.toInt() }, 
-                        valueRange = 0f..5f, 
-                        steps = 4,
-                        modifier = Modifier.weight(1f)
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Retries:", style = MaterialTheme.typography.bodyMedium)
+                    NumericStepper(
+                        value = maxRetries,
+                        onValueChange = { maxRetries = it },
+                        range = 0..5
                     )
                 }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Interval: ${retryInterval}h", style = MaterialTheme.typography.bodySmall, modifier = Modifier.width(80.dp))
-                    Slider(
-                        value = retryInterval.toFloat(), 
-                        onValueChange = { retryInterval = it.toInt() }, 
-                        valueRange = 1f..12f, 
-                        steps = 11,
-                        modifier = Modifier.weight(1f)
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Interval:", style = MaterialTheme.typography.bodyMedium)
+                    NumericStepper(
+                        value = retryInterval,
+                        onValueChange = { retryInterval = it },
+                        range = 1..12,
+                        unit = "h"
                     )
                 }
             }
